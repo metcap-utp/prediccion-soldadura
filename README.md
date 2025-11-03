@@ -5,7 +5,7 @@ Este repositorio contiene el código para entrenar y usar modelos de clasificaci
 ## Estructura del Proyecto
 
 ```
-alejandra-2025/
+dir-base/
 ├── prediccion_etiqueta_cc/        # Predicción de etiquetas completas combinadas
 │   ├── entrenamiento_completo.py
 │   ├── etiquetado_completo.py
@@ -67,6 +67,6 @@ alejandra-2025/
 
 ## Notas
 
-- Todos los scripts utilizan rutas absolutas desde el directorio base `alejandra-2025`
+- Todos los scripts utilizan rutas absolutas desde el directorio base
 - Los archivos CSV y modelos `.h5` están excluidos del control de versiones
 - Los audios de entrenamiento están organizados por tipo de placa, electrodo y polaridad

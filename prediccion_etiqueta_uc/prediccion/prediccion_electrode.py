@@ -89,9 +89,9 @@ print("\n>> Cargando extractor de características VGGish...")
 vggish_model = tf.saved_model.load("prediccion/vggish_1")
 print("   [OK] VGGish cargado")
 
-# Cargar el modelo previamente entrenado desde un archivo .h5 (asumiendo CWD = prediccion_etiqueta_uc)
-print(">> Cargando clasificador entrenado: my_model_completo01.h5")
-model = tf.keras.models.load_model("my_model_completo01.h5")
+# Cargar el modelo previamente entrenado (formato nativo Keras)
+print(">> Cargando clasificador entrenado: my_model_completo01.keras")
+model = tf.keras.models.load_model("my_model_completo01.keras")
 # Determinar la dimensión de salida del modelo
 try:
     output_dim = model.output_shape[-1]

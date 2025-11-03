@@ -95,9 +95,9 @@ history = model.fit(
 
 # Evaluar el modelo
 results = model.evaluate(X_test, y_test)
-print(f"Test Accuracy: {results[1] * 100:.2f}%")
-print(f"Test Precision: {results[2]:.2f}")
-print(f"Test Recall: {results[3]:.2f}")
+print(f"\nTest Accuracy:  {results[1] * 100:.2f}%")
+print(f"Test Precision: {results[2] * 100:.2f}%")
+print(f"Test Recall:    {results[3] * 100:.2f}%")
 
 # Guardar el modelo entrenado
-model.save("my_model_completo01.h5")
+model.save("my_model_completo01.keras")

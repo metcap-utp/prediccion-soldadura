@@ -31,8 +31,8 @@ def get_file_list(directory):
 # Cargar el modelo VGGish desde el directorio de guardado (asumiendo CWD = prediccion_etiqueta_uc)
 vggish_model = tf.saved_model.load("prediccion/vggish_1")
 
-# Cargar el modelo previamente entrenado desde un archivo .h5 (asumiendo CWD = prediccion_etiqueta_uc)
-model = tf.keras.models.load_model("my_model_completo01.h5")
+# Cargar el modelo previamente entrenado (formato nativo Keras)
+model = tf.keras.models.load_model("my_model_completo03.keras")
 
 #  Definir las clases
 classes = ["Plate_3mm", "Plate_6mm", "Plate_12mm"]
