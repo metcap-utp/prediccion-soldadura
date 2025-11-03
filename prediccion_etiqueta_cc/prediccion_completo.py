@@ -83,11 +83,31 @@ def extract_combined_features(audio_path):
     return pad_or_truncate(combined_features, desired_length=10)
 
 
-# Función para predecir etiquetas
-def predict_label(audio_path, encoder):
+# Función para predecir todas las etiquetas
+def predict_all_labels(audio_path):
     features = extract_combined_features(audio_path)
-    prediction = your_model.predict(np.expand_dims(features, axis=0))
-    return encoder[np.argmax(prediction)]
+    predictions = your_model.predict(
+        np.expand_dims(features, axis=0), verbose=0
+    )
+
+    # El modelo devuelve un array con 3 valores (uno por cada etiqueta)
+    # predictions shape: (1, 3) -> [plate_thickness_prob, electrode_prob, polarity_prob]
+    results = {}
+
+    # Decodificar cada predicción
+    for idx, label in enumerate(y_labels):
+        # Para multi-label con sigmoid, el valor > 0.5 se considera positivo
+        # Pero en este caso, usamos argmax sobre las clases
+        label_prediction = predictions[0][idx]
+        # Como usamos LabelBinarizer, el valor es 0 o 1
+        class_idx = int(round(label_prediction))
+        results[label] = (
+            label_classes[label][class_idx]
+            if class_idx < len(label_classes[label])
+            else label_classes[label][0]
+        )
+
+    return results
 
 
 # Función para extraer características adicionales (ZCR, centroides espectrales)
@@ -101,8 +121,21 @@ def extract_additional_features(audio_path):
     ).flatten()
 
 
-# Prueba con un archivo de audio específico
-audio_file_path = str(
+# Función para extraer etiquetas reales de la ruta
+def extract_labels_from_path(path):
+    parts = path.split("/")
+    for i, part in enumerate(parts):
+        if "Placa_" in part:
+            return {
+                "Plate Thickness": part,
+                "Electrode": parts[i + 1] if i + 1 < len(parts) else "Unknown",
+                "Polarity": parts[i + 2] if i + 2 < len(parts) else "Unknown",
+            }
+    return {}
+
+
+# Lista de archivos de prueba
+test_files = [
     PREDICCION_CC_DIR
     / "audios"
     / "train"
@@ -110,15 +143,63 @@ audio_file_path = str(
     / "E7018"
     / "DC"
     / "240926-144305_Audio"
-    / "drums_louder.wav"
-)
-# audio_file_path = str(PREDICCION_CC_DIR / 'audios' / 'train' / 'Placa_6mm' / 'E6011DC' / 'DC' / '240905-140049_Audio' / 'drums_louder.wav')
-# audio_file_path = str(PREDICCION_CC_DIR / 'audios' / 'train' / 'Placa_6mm' / 'E7018DC' / 'DC' / '240826-131533_Audio' / 'drums_louder.wav')
-# audio_file_path = str(PREDICCION_CC_DIR / 'audios' / 'train' / 'Placa_3mm' / 'E6013AC' / 'AC' / '240812-144347_Audio' / 'drums_louder.wav')
+    / "drums_louder.wav",
+    PREDICCION_CC_DIR
+    / "audios"
+    / "train"
+    / "Placa_6mm"
+    / "E6013"
+    / "AC"
+    / "240923-130248_Audio"
+    / "drums_louder.wav",
+    PREDICCION_CC_DIR
+    / "audios"
+    / "train"
+    / "Placa_3mm"
+    / "E6010"
+    / "DC"
+    / "240905-155358_Audio"
+    / "drums_louder.wav",
+]
 
-try:
-    for label in y_labels:
-        prediction = predict_label(audio_file_path, label_classes[label])
-        print(f"{label}: {prediction}")
-except Exception as e:
-    print(f"Error en predicción: {e}")
+print("=" * 70)
+print("PREDICCIÓN DE ETIQUETAS - MODELO COMPLETO")
+print("=" * 70)
+
+for audio_file_path in test_files:
+    audio_file_path = str(audio_file_path)
+
+    # Verificar si el archivo existe
+    if not Path(audio_file_path).exists():
+        print(f"\n[!] Archivo no encontrado: {audio_file_path}")
+        continue
+
+    try:
+        print(f"\n{'─' * 70}")
+        print(f"Archivo: {audio_file_path.split('/')[-2]}")
+
+        # Extraer etiquetas reales de la ruta
+        real_labels = extract_labels_from_path(audio_file_path)
+
+        # Predecir etiquetas
+        predictions = predict_all_labels(audio_file_path)
+
+        # Mostrar comparación
+        print(
+            f"\n{'Etiqueta':<20} {'Real':<15} {'Predicho':<15} {'Correcta':<10}"
+        )
+        print("─" * 70)
+
+        for label in y_labels:
+            real = real_labels.get(label, "N/A")
+            pred = predictions.get(label, "N/A")
+            match = "OK" if real == pred else "FAIL"
+            print(f"{label:<20} {real:<15} {pred:<15} {match:<10}")
+
+    except Exception as e:
+        print(f"\n[ERROR] Error en prediccion: {e}")
+        import traceback
+
+        traceback.print_exc()
+
+print(f"\n{'═' * 70}")
