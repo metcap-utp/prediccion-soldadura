@@ -36,56 +36,111 @@ for label in y_labels:
     label_classes[label] = encoder.classes_
 
 
-# Función para ajustar características
-
-
-def pad_or_truncate(features, desired_length=10):
-    features = features.flatten()
-    current_length = len(features)
-    if current_length > desired_length:
-        features = features[:desired_length]
-    elif current_length < desired_length:
-        padding = np.zeros(desired_length - current_length)
-        features = np.concatenate((features, padding))
-    return features.reshape((desired_length, 1))
-
-
-# Función para extraer características con VGGish
+# Función para extraer características VGGish (128 dimensiones)
 def extract_features_with_vggish(audio_path):
+    """
+    Extrae embeddings VGGish de un archivo de audio.
+    
+    Args:
+        audio_path: Ruta al archivo de audio
+        
+    Returns:
+        Array de 128 características VGGish
+    """
     try:
-        y_audio, sr = librosa.load(audio_path, sr=16000)
-        y_audio = y_audio.flatten()
-        if len(y_audio) % 1024 != 0:
-            padding = 1024 - (len(y_audio) % 1024)
-            y_audio = np.pad(y_audio, (0, padding), mode="constant")
-        audio_input = tf.convert_to_tensor(y_audio, dtype=tf.float32)
-        vggish_features = vggish_model(audio_input)
-        return vggish_features.numpy()
+        # Cargar audio a 16kHz (requerido por VGGish)
+        y_audio, sr = librosa.load(audio_path, sr=16000, mono=True)
+        
+        # VGGish espera entrada 1D directa (sin reshape)
+        vggish_features = vggish_model(y_audio)
+        
+        # Promediar sobre el eje temporal
+        vggish_avg = np.mean(vggish_features.numpy(), axis=0)
+        
+        return vggish_avg
     except Exception as e:
-        print(f"Error con {audio_path}: {e}")
-        return np.zeros((128,))
+        print(f"Error extrayendo VGGish de {audio_path}: {e}")
+        return np.zeros(128)
+# Función para extraer características MFCC (40 dimensiones: 20 mean + 20 std)
+def extract_mfcc(audio_path, n_mfcc=20):
+    """
+    Extrae coeficientes MFCC de un archivo de audio.
+
+    Args:
+        audio_path: Ruta al archivo de audio
+        n_mfcc: Número de coeficientes MFCC a extraer
+
+    Returns:
+        Array de 40 características (20 medias + 20 desviaciones estándar)
+    """
+    try:
+        # Cargar audio a 16kHz
+        y_audio, sr = librosa.load(audio_path, sr=16000, mono=True)
+
+        # Extraer MFCCs
+        mfccs = librosa.feature.mfcc(y=y_audio, sr=sr, n_mfcc=n_mfcc)
+
+        # Calcular media y desviación estándar
+        mfcc_mean = np.mean(mfccs, axis=1)
+        mfcc_std = np.std(mfccs, axis=1)
+
+        # Concatenar
+        mfcc_features = np.concatenate([mfcc_mean, mfcc_std])
+
+        return mfcc_features
+    except Exception as e:
+        print(f"Error extrayendo MFCC de {audio_path}: {e}")
+        return np.zeros(40)
 
 
-# Función para extraer características MFCC
-def extract_mfcc(audio_path, n_mfcc=10):
-    y_audio, sr = librosa.load(audio_path, sr=16000)
-    mfccs = librosa.feature.mfcc(y=y_audio, sr=sr, n_mfcc=n_mfcc)
-    return mfccs.flatten()[:10]
-
-
-# Función para combinar todas las características
+# Función para combinar todas las características (168 dimensiones totales)
 def extract_combined_features(audio_path):
+    """
+    Extrae características combinadas VGGish + MFCC.
+    Debe coincidir con el proceso de extracción del entrenamiento.
+
+    Args:
+        audio_path: Ruta al archivo de audio
+
+    Returns:
+        Array de 168 características (128 VGGish + 40 MFCC)
+    """
+    # Extraer VGGish (128)
     vggish_features = extract_features_with_vggish(audio_path)
+
+    # Extraer MFCC (40)
     mfcc_features = extract_mfcc(audio_path)
-    combined_features = np.concatenate(
-        [vggish_features.flatten(), mfcc_features]
-    )
-    return pad_or_truncate(combined_features, desired_length=10)
+
+    # Combinar: 128 + 40 = 168
+    combined_features = np.concatenate([vggish_features, mfcc_features])
+
+    # Redimensionar para el modelo Conv1D
+    return combined_features.reshape((168, 1))
 
 
 # Función para predecir todas las etiquetas
 def predict_all_labels(audio_path):
+    """
+    Predice todas las etiquetas (Plate Thickness, Electrode, Polarity)
+    para un archivo de audio dado.
+
+    Args:
+        audio_path: Ruta al archivo de audio
+
+    Returns:
+        Diccionario con las etiquetas predichas
+    """
+    # Extraer características (168 dimensiones)
     features = extract_combined_features(audio_path)
+
+    # Verificar dimensión correcta
+    if features.shape[0] != 168:
+        print(
+            f"Advertencia: Características={features.shape[0]}, esperadas=168"
+        )
+        return {}
+
+    # Predecir con el modelo
     predictions = your_model.predict(
         np.expand_dims(features, axis=0), verbose=0
     )
@@ -108,17 +163,6 @@ def predict_all_labels(audio_path):
         )
 
     return results
-
-
-# Función para extraer características adicionales (ZCR, centroides espectrales)
-def extract_additional_features(audio_path):
-    y_audio, sr = librosa.load(audio_path, sr=16000)
-    zcr = librosa.feature.zero_crossing_rate(y_audio)
-    spectral_centroid = librosa.feature.spectral_centroid(y=y_audio, sr=sr)
-    spectral_rolloff = librosa.feature.spectral_rolloff(y=y_audio, sr=sr)
-    return np.concatenate(
-        [zcr, spectral_centroid, spectral_rolloff], axis=0
-    ).flatten()
 
 
 # Función para extraer etiquetas reales de la ruta

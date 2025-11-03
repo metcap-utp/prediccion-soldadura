@@ -5,41 +5,81 @@ import pandas as pd
 import librosa.display
 from pathlib import Path
 from tqdm import tqdm
+import tensorflow as tf
+import tensorflow_hub as hub
 
 # Definir directorio base
 BASE_DIR = Path(__file__).resolve().parent.parent
 PREDICCION_CC_DIR = BASE_DIR / "prediccion_etiqueta_cc"
 
+# Cargar el modelo VGGish
+print(">> Cargando modelo VGGish...")
+vggish_model_handle = str(PREDICCION_CC_DIR / "vggish_1")
+vggish_model = hub.load(vggish_model_handle)
+print("   [OK] VGGish cargado")
 
-# Función para extraer características acústicas
+
+# Función para extraer características con VGGish
+def extraer_caracteristicas_vggish(audio_path):
+    try:
+        # Cargar audio a 16kHz (requerido por VGGish)
+        y_audio, sr = librosa.load(audio_path, sr=16000, mono=True)
+
+        # VGGish espera entrada 1D sin reshape
+        # El modelo procesa la señal completa y retorna embeddings por ventana
+        vggish_features = vggish_model(y_audio)
+
+        # Promediar sobre todas las ventanas temporales para obtener 128 características
+        vggish_avg = np.mean(vggish_features.numpy(), axis=0)
+
+        # Verificar que tenemos exactamente 128 dimensiones
+        assert (
+            vggish_avg.shape[0] == 128
+        ), f"VGGish debe retornar 128 dims, obtenido: {vggish_avg.shape[0]}"
+
+        return vggish_avg
+    except Exception as e:
+        print(f"\n[ERROR] VGGish en {audio_path}: {e}")
+        # Retornar vector de ceros en caso de error
+        return np.zeros(128)
+
+
+# Función para extraer características acústicas complementarias
+def extraer_caracteristicas_librosa(audio_path):
+    try:
+        # Cargar el archivo de audio
+        y, sr = librosa.load(audio_path, sr=16000)
+
+        # MFCCs (tomando 20 para más información)
+        mfccs = librosa.feature.mfcc(y=y, sr=sr, n_mfcc=20)
+        mfcc_mean = np.mean(mfccs, axis=1)
+        mfcc_std = np.std(mfccs, axis=1)
+
+        # Combinar media y desviación estándar (40 características)
+        features = np.concatenate([mfcc_mean, mfcc_std])
+        return features
+    except Exception as e:
+        print(f"\n[ERROR] Librosa en {audio_path}: {e}")
+        return np.zeros(40)
+
+
+# Función combinada para extraer todas las características
 def extraer_caracteristicas(audio_path):
-    # Cargar el archivo de audio
-    y, sr = librosa.load(audio_path, sr=8000)
+    # VGGish: 128 características
+    vggish_features = extraer_caracteristicas_vggish(audio_path)
 
-    # Centroide espectral
-    centroide = librosa.feature.spectral_centroid(y=y, sr=sr).mean()
+    # Librosa: 40 características (20 MFCCs x 2: mean + std)
+    librosa_features = extraer_caracteristicas_librosa(audio_path)
 
-    # Dispersión espectral
-    dispersión = librosa.feature.spectral_bandwidth(y=y, sr=sr).mean()
+    # Combinar: Total 168 características
+    combined = np.concatenate([vggish_features, librosa_features])
 
-    # Ataque
-    onset_env = librosa.onset.onset_strength(y=y, sr=sr)
-    ataque = onset_env.mean()
+    # Verificar dimensión final
+    assert (
+        combined.shape[0] == 168
+    ), f"Esperadas 168 características, obtenidas: {combined.shape[0]}"
 
-    # Decaimiento
-    decaimiento = librosa.feature.rms(y=y).mean()
-
-    # HNR (Rapidez de tono) - Versión optimizada
-    # Usar una ventana más pequeña para acelerar el cálculo
-    hnr = librosa.effects.harmonic(y, margin=2.0)
-    hnr_mean = np.mean(hnr)
-
-    # MFCCs (tomando los primeros 5)
-    mfccs = librosa.feature.mfcc(y=y, sr=sr, n_mfcc=5)
-    mfcc_mean = np.mean(mfccs, axis=1)
-
-    # Devolver todas las características como un array
-    return [centroide, dispersión, ataque, decaimiento, *mfcc_mean, hnr_mean]
+    return combined.tolist()
 
 
 # Función para recorrer directorios y capturar las rutas, etiquetas y características
@@ -88,22 +128,16 @@ def obtener_rutas_y_etiquetas_con_caracteristicas(directorio_base):
             continue
 
     # Crear el DataFrame
-    columnas = [
-        "Audio Path",
-        "Plate Thickness",
-        "Electrode",
-        "Polarity",
-        "Spectral Centroid",
-        "Spectral Bandwidth",
-        "Onset Attack",
-        "RMS Decay",
-        "MFCC_1",
-        "MFCC_2",
-        "MFCC_3",
-        "MFCC_4",
-        "MFCC_5",
-        "HNR",
-    ]
+    # Columnas: Audio Path, 3 etiquetas, 168 características
+    columnas = ["Audio Path", "Plate Thickness", "Electrode", "Polarity"]
+
+    # Agregar nombres de características VGGish (128)
+    columnas += [f"VGGish_{i+1}" for i in range(128)]
+
+    # Agregar nombres de características MFCC (40: 20 mean + 20 std)
+    columnas += [f"MFCC_{i+1}_mean" for i in range(20)]
+    columnas += [f"MFCC_{i+1}_std" for i in range(20)]
+
     df = pd.DataFrame(datos, columns=columnas)
 
     return df
@@ -118,8 +152,10 @@ df_rutas_con_caracteristicas = obtener_rutas_y_etiquetas_con_caracteristicas(
 )
 
 # Guardar el DataFrame en CSV
-df_rutas_con_caracteristicas.to_csv(
-    PREDICCION_CC_DIR / "rutas_etiquetas_completos.csv", index=False
-)
+output_path = PREDICCION_CC_DIR / "rutas_etiquetas_completos.csv"
+df_rutas_con_caracteristicas.to_csv(output_path, index=False)
 
-print("CSV generado correctamente.")
+print(f"\n>> CSV generado correctamente")
+print(f"   Archivo: {output_path}")
+print(f"   Muestras: {len(df_rutas_con_caracteristicas)}")
+print(f"   Características por muestra: 168 (128 VGGish + 40 MFCC)")

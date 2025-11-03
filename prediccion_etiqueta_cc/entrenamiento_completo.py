@@ -40,28 +40,54 @@ X_train, X_test, y_train, y_test = train_test_split(
 # Verificar que y_train es un ndarray y su forma
 print("y_train type:", type(y_train), "Shape:", y_train.shape)
 """
+# Mostrar información del dataset
+print(f"\n>> Información del dataset:")
+print(f"   Total muestras: {len(X)}")
+print(f"   Características por muestra: {X.shape[1]}")
+print(f"   Conjunto entrenamiento: {len(X_train)} muestras")
+print(f"   Conjunto prueba: {len(X_test)} muestras")
+
 # Redimensionar las características para su uso en redes convolucionales
 X_train = X_train[..., np.newaxis]
 X_test = X_test[..., np.newaxis]
 
 # Crear el modelo de red neuronal con capas convolucionales
+# Arquitectura más profunda para aprovechar las 168 características
+print(f"\n>> Creando modelo de red neuronal...")
 model = keras.Sequential(
     [
-        keras.layers.Input(
-            shape=(X.shape[1], 1)
-        ),  # Añadir dimensión para el canal
-        keras.layers.Conv1D(32, 3, activation="relu", padding="same"),
-        keras.layers.MaxPooling1D(2),
+        keras.layers.Input(shape=(X.shape[1], 1)),
+        # Primera capa convolucional
         keras.layers.Conv1D(64, 3, activation="relu", padding="same"),
+        keras.layers.BatchNormalization(),
         keras.layers.MaxPooling1D(2),
+        keras.layers.Dropout(0.3),
+        # Segunda capa convolucional
+        keras.layers.Conv1D(128, 3, activation="relu", padding="same"),
+        keras.layers.BatchNormalization(),
+        keras.layers.MaxPooling1D(2),
+        keras.layers.Dropout(0.3),
+        # Tercera capa convolucional
+        keras.layers.Conv1D(256, 3, activation="relu", padding="same"),
+        keras.layers.BatchNormalization(),
+        keras.layers.MaxPooling1D(2),
+        keras.layers.Dropout(0.3),
+        # Capas densas
         keras.layers.Flatten(),
+        keras.layers.Dense(256, activation="relu"),
+        keras.layers.BatchNormalization(),
+        keras.layers.Dropout(0.4),
         keras.layers.Dense(128, activation="relu"),
+        keras.layers.BatchNormalization(),
+        keras.layers.Dropout(0.4),
         keras.layers.Dense(64, activation="relu"),
-        keras.layers.Dense(
-            y.shape[1], activation="sigmoid"
-        ),  # Salida multietiqueta
+        # Salida multietiqueta
+        keras.layers.Dense(y.shape[1], activation="sigmoid"),
     ]
 )
+
+# Mostrar resumen del modelo
+model.summary()
 
 # Compilar el modelo con loss adecuado para clasificación multietiqueta
 model.compile(
@@ -74,16 +100,32 @@ model.compile(
     ],
 )
 
-# Entrenar el modelo
+# Entrenar el modelo con early stopping
+print(f"\n>> Entrenando modelo...")
+early_stopping = keras.callbacks.EarlyStopping(
+    monitor="val_loss", patience=15, restore_best_weights=True
+)
+
 history = model.fit(
-    X_train, y_train, epochs=100, batch_size=32, validation_split=0.2
+    X_train,
+    y_train,
+    epochs=100,
+    batch_size=32,
+    validation_split=0.2,
+    callbacks=[early_stopping],
+    verbose=1,
 )
 
 # Evaluar el modelo
-results = model.evaluate(X_test, y_test)
-print(f"\nTest Accuracy:  {results[1] * 100:.2f}%")
-print(f"Test Precision: {results[2] * 100:.2f}%")
-print(f"Test Recall:    {results[3] * 100:.2f}%")
+print(f"\n>> Evaluando modelo en conjunto de prueba...")
+results = model.evaluate(X_test, y_test, verbose=0)
+print(f"\n   Métricas finales:")
+print(f"   Accuracy:  {results[1] * 100:.2f}%")
+print(f"   Precision: {results[2] * 100:.2f}%")
+print(f"   Recall:    {results[3] * 100:.2f}%")
 
 # Guardar el modelo entrenado en formato nativo Keras
-model.save(PREDICCION_CC_DIR / "my_model_completo.keras")
+model_path = PREDICCION_CC_DIR / "my_model_completo.keras"
+model.save(model_path)
+print(f"\n>> Modelo guardado: {model_path}")
+print(f"   [OK] Entrenamiento completado exitosamente")
