@@ -42,6 +42,12 @@ wheels/
 *.pt
 *.weights
 
+# VGGish model directories (ignore content but keep folder structure)
+vggish_1/*
+!vggish_1/.gitkeep
+**/vggish_1/*
+!**/vggish_1/.gitkeep
+
 # Data files
 *.wav
 *.mp3
