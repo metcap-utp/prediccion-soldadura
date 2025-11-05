@@ -4,7 +4,7 @@ Esta guía explica el orden de ejecución y la función de cada script en el pro
 
 ---
 
-## 📁 Estructura del Proyecto
+## Estructura del Proyecto
 
 El proyecto está organizado en tres directorios principales:
 
@@ -14,7 +14,7 @@ El proyecto está organizado en tres directorios principales:
 
 ---
 
-## 🔵 Predicción Etiqueta CC (Clasificación Completa Combinada)
+## Predicción Etiqueta CC (Clasificación Completa Combinada)
 
 **Directorio:** `prediccion_etiqueta_cc/`
 
@@ -22,7 +22,7 @@ Este módulo clasifica las tres etiquetas simultáneamente usando un único mode
 
 ### Orden de Ejecución:
 
-#### 1️⃣ `etiquetado_completo.py`
+#### 1. `etiquetado_completo.py`
 
 **Función:** Extrae características de audio y genera el dataset CSV.
 
@@ -45,7 +45,7 @@ python prediccion_etiqueta_cc/etiquetado_completo.py
 
 ---
 
-#### 2️⃣ `entrenamiento_completo.py`
+#### 2. `entrenamiento_completo.py`
 
 **Función:** Entrena el modelo de clasificación multi-etiqueta.
 
@@ -74,7 +74,7 @@ python prediccion_etiqueta_cc/entrenamiento_completo.py
 
 ---
 
-#### 3️⃣ `prediccion_completo.py`
+#### 3. `prediccion_completo.py`
 
 **Función:** Realiza predicciones sobre audios nuevos.
 
@@ -100,7 +100,7 @@ python prediccion_etiqueta_cc/prediccion_completo.py
 
 ---
 
-## 🟢 Predicción Etiqueta UC (Clasificación Unitaria)
+## Predicción Etiqueta UC (Clasificación Unitaria)
 
 **Directorio:** `prediccion_etiqueta_uc/`
 
@@ -117,7 +117,7 @@ prediccion_etiqueta_uc/
 
 ### Orden de Ejecución:
 
-#### 1️⃣ Etiquetado (Generar CSVs)
+#### 1. Etiquetado (Generar CSVs)
 
 **Scripts:**
 
@@ -145,7 +145,7 @@ python prediccion_etiqueta_uc/etiquetado_polarity.py
 
 ---
 
-#### 2️⃣ Entrenamiento (Modelos Independientes)
+#### 2. Entrenamiento (Modelos Independientes)
 
 **Directorio:** `entrenamiento/`
 
@@ -181,7 +181,7 @@ python prediccion_etiqueta_uc/entrenamiento/entrenamiento_polarity.py
 
 ---
 
-#### 3️⃣ Predicción (Modelos Independientes)
+#### 3. Predicción (Modelos Independientes)
 
 **Directorio:** `prediccion/`
 
@@ -214,7 +214,7 @@ python prediccion_etiqueta_uc/prediccion/prediccion_polarity.py
 
 ---
 
-## 🟣 Predicción Etiqueta USG (Clasificación por Segmentos)
+## Predicción Etiqueta USG (Clasificación por Segmentos)
 
 **Directorio:** `prediccion_etiqueta_usg/`
 
@@ -233,9 +233,9 @@ Cada subdirectorio contiene los mismos archivos y sigue el mismo proceso.
 
 ### Orden de Ejecución (para cada directorio):
 
-#### 0️⃣ Regenerar CSVs (Solo una vez o cuando cambien los audios)
+#### 0. Regenerar CSVs (Solo una vez o cuando cambien los audios)
 
-**Script:** `regenerar_csv_usg.py` (en la raíz del proyecto)
+**Script:** `regenerar_csv_usg_local.py` (en la raíz del proyecto)
 
 **Qué hace:**
 
@@ -252,12 +252,12 @@ Cada subdirectorio contiene los mismos archivos y sigue el mismo proceso.
 - `30s/rutas_etiquetas_*.csv`
 
 ```bash
-python regenerar_csv_usg.py
+python regenerar_csv_usg_local.py
 ```
 
 ---
 
-#### 1️⃣ `training_vggish_completo.py`
+#### 1. `training_vggish_completo.py`
 
 **Directorio:** `prediccion_etiqueta_usg/05s/`, `10s/` o `30s/`
 
@@ -292,7 +292,7 @@ python prediccion_etiqueta_usg/30s/training_vggish_completo.py
 
 ---
 
-#### 2️⃣ `modelo_vggish_completo.py`
+#### 2. `modelo_vggish_completo.py`
 
 **Directorio:** `prediccion_etiqueta_usg/05s/`, `10s/` o `30s/`
 
@@ -327,7 +327,7 @@ python prediccion_etiqueta_usg/30s/modelo_vggish_completo.py
 
 ---
 
-## 📊 Resumen del Flujo de Trabajo
+## Resumen del Flujo de Trabajo
 
 ### Para CC (Clasificación Completa):
 
@@ -348,14 +348,14 @@ python prediccion_etiqueta_usg/30s/modelo_vggish_completo.py
 ### Para USG (Clasificación por Segmentos):
 
 ```
-0. regenerar_csv_usg.py → CSVs para 05s, 10s, 30s
+0. regenerar_csv_usg_local.py → CSVs para 05s, 10s, 30s
 1. training_vggish_completo.py → Modelo por duración
 2. modelo_vggish_completo.py → Evaluación y predicciones
 ```
 
 ---
 
-## 🎯 Recomendaciones
+## Recomendaciones
 
 1. **Ejecuta primero CC** - Es el más completo y da mejores resultados
 2. **Regenera CSVs de USG** si cambias la estructura de audios
@@ -365,7 +365,7 @@ python prediccion_etiqueta_usg/30s/modelo_vggish_completo.py
 
 ---
 
-## 📝 Notas Importantes
+## Notas Importantes
 
 - **VGGish**: Modelo pre-entrenado que extrae embeddings de audio a 16kHz
 - **Características**: CC usa 168 (128 VGGish + 40 MFCC), UC/USG solo VGGish
@@ -374,14 +374,14 @@ python prediccion_etiqueta_usg/30s/modelo_vggish_completo.py
 
 ---
 
-## 🔧 Utilidades
+## Utilidades
 
-### `regenerar_csv_usg.py`
+### `regenerar_csv_usg_local.py`
 
 Script de utilidad para regenerar todos los CSVs de USG con rutas relativas actualizadas.
 
 ```bash
-python regenerar_csv_usg.py
+python regenerar_csv_usg_local.py
 ```
 
 ---
