@@ -306,13 +306,13 @@ def predict_genre(filenames):
 
 
 #  Hacer predicciones en el conjunto de prueba
-print(f"\n>> Ejecutando predicciones en conjunto de PRUEBA...")
+print("\n>> Ejecutando predicciones en conjunto de PRUEBA...")
 print(f"   Procesando {len(test)} archivos de audio...")
 test["prediction"] = predict_genre(test["filename"])
 print("   [OK] Predicciones completadas")
 
 #  Hacer predicciones en el conjunto de entrenamiento
-print(f"\n>> Ejecutando predicciones en conjunto de ENTRENAMIENTO...")
+print("\n>> Ejecutando predicciones en conjunto de ENTRENAMIENTO...")
 print(f"   Procesando {len(train)} archivos de audio...")
 train["prediction"] = predict_genre(train["filename"])
 print("   [OK] Predicciones completadas")

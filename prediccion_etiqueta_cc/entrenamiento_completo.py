@@ -41,7 +41,7 @@ X_train, X_test, y_train, y_test = train_test_split(
 print("y_train type:", type(y_train), "Shape:", y_train.shape)
 """
 # Mostrar información del dataset
-print(f"\n>> Información del dataset:")
+print("\n>> Información del dataset:")
 print(f"   Total muestras: {len(X)}")
 print(f"   Características por muestra: {X.shape[1]}")
 print(f"   Conjunto entrenamiento: {len(X_train)} muestras")
@@ -53,7 +53,7 @@ X_test = X_test[..., np.newaxis]
 
 # Crear el modelo de red neuronal con capas convolucionales
 # Arquitectura más profunda para aprovechar las 168 características
-print(f"\n>> Creando modelo de red neuronal...")
+print("\n>> Creando modelo de red neuronal...")
 model = keras.Sequential(
     [
         keras.layers.Input(shape=(X.shape[1], 1)),
@@ -101,7 +101,7 @@ model.compile(
 )
 
 # Entrenar el modelo con early stopping
-print(f"\n>> Entrenando modelo...")
+print("\n>> Entrenando modelo...")
 early_stopping = keras.callbacks.EarlyStopping(
     monitor="val_loss", patience=15, restore_best_weights=True
 )
@@ -117,9 +117,9 @@ history = model.fit(
 )
 
 # Evaluar el modelo
-print(f"\n>> Evaluando modelo en conjunto de prueba...")
+print("\n>> Evaluando modelo en conjunto de prueba...")
 results = model.evaluate(X_test, y_test, verbose=0)
-print(f"\n   Métricas finales:")
+print("\n   Métricas finales:")
 print(f"   Accuracy:  {results[1] * 100:.2f}%")
 print(f"   Precision: {results[2] * 100:.2f}%")
 print(f"   Recall:    {results[3] * 100:.2f}%")
@@ -128,4 +128,4 @@ print(f"   Recall:    {results[3] * 100:.2f}%")
 model_path = PREDICCION_CC_DIR / "my_model_completo.keras"
 model.save(model_path)
 print(f"\n>> Modelo guardado: {model_path}")
-print(f"   [OK] Entrenamiento completado exitosamente")
+print("   [OK] Entrenamiento completado exitosamente")

@@ -33,9 +33,9 @@ def extraer_caracteristicas_vggish(audio_path):
         vggish_avg = np.mean(vggish_features.numpy(), axis=0)
 
         # Verificar que tenemos exactamente 128 dimensiones
-        assert (
-            vggish_avg.shape[0] == 128
-        ), f"VGGish debe retornar 128 dims, obtenido: {vggish_avg.shape[0]}"
+        assert vggish_avg.shape[0] == 128, (
+            f"VGGish debe retornar 128 dims, obtenido: {vggish_avg.shape[0]}"
+        )
 
         return vggish_avg
     except Exception as e:
@@ -75,9 +75,9 @@ def extraer_caracteristicas(audio_path):
     combined = np.concatenate([vggish_features, librosa_features])
 
     # Verificar dimensión final
-    assert (
-        combined.shape[0] == 168
-    ), f"Esperadas 168 características, obtenidas: {combined.shape[0]}"
+    assert combined.shape[0] == 168, (
+        f"Esperadas 168 características, obtenidas: {combined.shape[0]}"
+    )
 
     return combined.tolist()
 
@@ -99,15 +99,13 @@ def obtener_rutas_y_etiquetas_con_caracteristicas(directorio_base):
     # Recorrer con barra de progreso
     for audio_path in tqdm(archivos_a_procesar, desc="Procesando audios"):
         # Obtener las etiquetas a partir de las carpetas
-        partes_ruta = os.path.relpath(audio_path, directorio_base).split(
-            os.sep
-        )
+        partes_ruta = os.path.relpath(audio_path, directorio_base).split(os.sep)
 
         # Encontrar las carpetas relevantes (Placa, Electrode, Current Type)
         try:
-            idx_placa = [
-                i for i, parte in enumerate(partes_ruta) if "Placa_" in parte
-            ][0]
+            idx_placa = [i for i, parte in enumerate(partes_ruta) if "Placa_" in parte][
+                0
+            ]
             plate_thickness = partes_ruta[idx_placa]  # 'Placa_12mm'
             electrode = partes_ruta[idx_placa + 1]  # 'E6010', 'E6011', etc.
             current_type = partes_ruta[idx_placa + 2]  # 'AC' o 'DC'
@@ -117,8 +115,7 @@ def obtener_rutas_y_etiquetas_con_caracteristicas(directorio_base):
 
             # Agregar fila a la lista de datos
             datos.append(
-                [audio_path, plate_thickness, electrode, current_type]
-                + características
+                [audio_path, plate_thickness, electrode, current_type] + características
             )
         except IndexError:
             # Si no se encuentra la estructura esperada, omitir
@@ -132,11 +129,11 @@ def obtener_rutas_y_etiquetas_con_caracteristicas(directorio_base):
     columnas = ["Audio Path", "Plate Thickness", "Electrode", "Polarity"]
 
     # Agregar nombres de características VGGish (128)
-    columnas += [f"VGGish_{i+1}" for i in range(128)]
+    columnas += [f"VGGish_{i + 1}" for i in range(128)]
 
     # Agregar nombres de características MFCC (40: 20 mean + 20 std)
-    columnas += [f"MFCC_{i+1}_mean" for i in range(20)]
-    columnas += [f"MFCC_{i+1}_std" for i in range(20)]
+    columnas += [f"MFCC_{i + 1}_mean" for i in range(20)]
+    columnas += [f"MFCC_{i + 1}_std" for i in range(20)]
 
     df = pd.DataFrame(datos, columns=columnas)
 
@@ -155,7 +152,7 @@ df_rutas_con_caracteristicas = obtener_rutas_y_etiquetas_con_caracteristicas(
 output_path = PREDICCION_CC_DIR / "rutas_etiquetas_completos.csv"
 df_rutas_con_caracteristicas.to_csv(output_path, index=False)
 
-print(f"\n>> CSV generado correctamente")
+print("\n>> CSV generado correctamente")
 print(f"   Archivo: {output_path}")
 print(f"   Muestras: {len(df_rutas_con_caracteristicas)}")
-print(f"   Características por muestra: 168 (128 VGGish + 40 MFCC)")
+print("   Características por muestra: 168 (128 VGGish + 40 MFCC)")

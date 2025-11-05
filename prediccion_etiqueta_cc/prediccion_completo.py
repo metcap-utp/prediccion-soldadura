@@ -40,27 +40,29 @@ for label in y_labels:
 def extract_features_with_vggish(audio_path):
     """
     Extrae embeddings VGGish de un archivo de audio.
-    
+
     Args:
         audio_path: Ruta al archivo de audio
-        
+
     Returns:
         Array de 128 características VGGish
     """
     try:
         # Cargar audio a 16kHz (requerido por VGGish)
         y_audio, sr = librosa.load(audio_path, sr=16000, mono=True)
-        
+
         # VGGish espera entrada 1D directa (sin reshape)
         vggish_features = vggish_model(y_audio)
-        
+
         # Promediar sobre el eje temporal
         vggish_avg = np.mean(vggish_features.numpy(), axis=0)
-        
+
         return vggish_avg
     except Exception as e:
         print(f"Error extrayendo VGGish de {audio_path}: {e}")
         return np.zeros(128)
+
+
 # Función para extraer características MFCC (40 dimensiones: 20 mean + 20 std)
 def extract_mfcc(audio_path, n_mfcc=20):
     """
