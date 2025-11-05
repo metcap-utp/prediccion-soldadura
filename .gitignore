@@ -1,5 +1,6 @@
 # Python
 __pycache__/
+.mypy_cache/
 *.py[cod]
 *$py.class
 *.so
@@ -42,7 +43,6 @@ wheels/
 *.weights
 
 # Data files
-*.csv
 *.wav
 *.mp3
 *.flac

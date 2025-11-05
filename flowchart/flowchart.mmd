@@ -1,7 +1,0 @@
-%% Flujo lineal CC
-graph TD
-  A[Prediccion_EtiquetaCC/Audios Train y Test] --> B[Etiquetado_completo.py filtra drums_louder y extrae centroid, bandwidth, attack, RMS, MFCC, HNR]
-  B --> C[Genera Rutas_Etiquetas_Completos.csv]
-  C --> D[Entrenamieto_completo.py aplica reshape, pad, y split]
-  D --> E[Entrena modelo y guarda my_model_completo.h5]
-  E --> F[Prediccion_completo.py hace predicciones basadas en el modelo entrenado]

@@ -1,72 +1,156 @@
-# Predicción de Etiquetas de Soldadura con Audio
+# Clasificación de Audio de Soldadura con Deep Learning
 
-Este repositorio contiene el código para entrenar y usar modelos de clasificación de audio para predecir características de soldadura.
+Sistema de clasificación multi-etiqueta para predecir características de soldadura (espesor de placa, tipo de electrodo y polaridad) a partir de señales de audio usando modelos de Deep Learning con VGGish.
+
+## Descripción
+
+Este proyecto implementa tres enfoques diferentes para la clasificación de audio de soldadura:
+
+- **CC (Clasificación Completa)**: Modelo multi-salida que predice las 3 etiquetas simultáneamente
+- **UC (Clasificación Unitaria)**: Modelos independientes para cada etiqueta
+- **USG (Clasificación por Segmentos)**: Modelos entrenados con diferentes duraciones de audio (5s, 10s, 30s)
+
+## Inicio Rápido
+
+### Instalación
+
+```bash
+# Clonar repositorio
+git clone <url-del-repo>
+cd prediccion-soldadura
+
+# Opción 1: Usar conda (recomendado)
+conda env create -f environment.yaml
+conda activate audio
+
+# Opción 2: Usar pip
+pip install -r requirements.txt
+```
+
+### Obtener los Audios
+
+Los archivos de audio **no están incluidos** en el repositorio. Descárgalos desde:
+
+- **5s y 10s**: [Audios_Segmentados](https://github.com/AleAvila09/Audios_Segmentados)
+- **30s**: [Audios_Segmentado30s](https://github.com/AleAvila09/Audios_Segmentado30s)
+
+Estructura esperada para USG:
+
+```
+prediccion_etiqueta_usg/
+├── 05s/audio/
+│   ├── train/
+│   │   ├── Placa_3mm/E6010/AC/.../*.wav
+│   │   ├── Placa_3mm/E6010/DC/.../*.wav
+│   │   └── ... (más combinaciones)
+│   └── test/
+├── 10s/audio/
+│   └── (misma estructura)
+└── 30s/audio/
+    └── (misma estructura)
+```
+
+Después de descargar los audios, regenera los CSVs:
+
+```bash
+python regenerar_csv_usg_local.py
+```
+
+### Uso Básico
+
+```bash
+# 1. Extraer características y generar dataset
+python prediccion_etiqueta_cc/etiquetado_completo.py
+
+# 2. Entrenar modelo
+python prediccion_etiqueta_cc/entrenamiento_completo.py
+
+# 3. Realizar predicciones
+python prediccion_etiqueta_cc/prediccion_completo.py
+```
+
+**Para instrucciones detalladas, consulta [GUIA_USO.md](GUIA_USO.md)**
 
 ## Estructura del Proyecto
 
 ```
-dir-base/
-├── prediccion_etiqueta_cc/        # Predicción de etiquetas completas combinadas
-│   ├── entrenamiento_completo.py
-│   ├── etiquetado_completo.py
-│   └── prediccion_completo.py
-├── prediccion_etiqueta_uc/        # Predicción de etiquetas individuales
-│   ├── entrenamiento/
-│   ├── prediccion/
-│   └── audios01/
-└── diagrams/                      # Diagramas del proyecto
+alejandra-2025/
+├── prediccion_etiqueta_cc/          # Clasificación Completa Combinada
+│   ├── etiquetado_completo.py       # Extracción de características (VGGish + MFCC)
+│   ├── entrenamiento_completo.py    # Entrenamiento del modelo multi-salida
+│   ├── prediccion_completo.py       # Predicción de nuevos audios
+│   ├── vggish_1/                    # Modelo VGGish pre-entrenado
+│   └── Audios/                      # Dataset de audio
+│       ├── Train/                   # Datos de entrenamiento
+│       └── Test/                    # Datos de prueba
+│
+├── prediccion_etiqueta_uc/          # Clasificación Unitaria
+│   ├── entrenamiento/               # Scripts de entrenamiento por etiqueta
+│   │   ├── entrenamiento_plate.py
+│   │   ├── entrenamiento_electrode.py
+│   │   └── entrenamiento_polarity.py
+│   ├── prediccion/                  # Scripts de predicción por etiqueta
+│   │   ├── prediccion_plate.py
+│   │   ├── prediccion_electrode.py
+│   │   └── prediccion_polarity.py
+│   └── audios01/                    # Dataset de audio
+│       ├── train/
+│       └── test/
+│
+├── prediccion_etiqueta_usg/         # Clasificación por Segmentos
+│   ├── 05s/                         # Modelos para segmentos de 5 segundos
+│   │   ├── audio/                   # Dataset local (3071 archivos)
+│   │   │   ├── train/
+│   │   │   └── test/
+│   │   ├── training_vggish_completo.py
+│   │   ├── modelo_vggish_completo.py
+│   │   └── rutas_etiquetas_*.csv    # CSVs generados automáticamente
+│   ├── 10s/                         # Modelos para segmentos de 10 segundos (1495 archivos)
+│   └── 30s/                         # Modelos para segmentos de 30 segundos (602 archivos)
+│
+├── diagrams/                        # Diagramas y visualizaciones
+├── regenerar_csv_usg_local.py      # Utilidad para regenerar CSVs con audios locales
+├── environment.yaml                # Conda environment (audio)
+├── requirements.txt                # Dependencias pip
+├── GUIA_USO.md                     # Guía detallada de uso
+└── README.md                        # Este archivo
 ```
 
-## Requisitos
+## Características Técnicas
 
-- Python 3.8+
-- TensorFlow 2.x
-- librosa
-- pandas
-- numpy
-- scikit-learn
-- tensorflow-hub
+### Extracción de Características
 
-## Uso
+- **VGGish**: 128 embeddings pre-entrenados de audio a 16kHz
+- **MFCC**: 40 coeficientes mel-cepstrales (solo en CC)
+- **Total**: 168 características por audio (CC) o 128 (UC/USG)
 
-### Predicción de Etiquetas Completas (CC)
+### Arquitectura del Modelo
 
-1. Etiquetar audios:
+- **Red Neuronal**: Conv1D con capas de BatchNormalization y Dropout
+- **Salidas**: 3 clasificadores independientes (Plate, Electrode, Polarity)
+- **Optimizador**: Adam
+- **Función de pérdida**: Sparse Categorical Crossentropy
 
-   ```bash
-   python prediccion_etiqueta_cc/etiquetado_completo.py
-   ```
+### Etiquetas Clasificadas
 
-2. Entrenar modelo:
+- **Plate Thickness**: Placa_3mm, Placa_6mm, Placa_12mm
+- **Electrode**: E6010, E6011, E6013, E7018
+- **Polarity**: AC, DC
 
-   ```bash
-   python prediccion_etiqueta_cc/entrenamiento_completo.py
-   ```
+## Utilidades
 
-3. Realizar predicciones:
-   ```bash
-   python prediccion_etiqueta_cc/prediccion_completo.py
-   ```
+### Regenerar CSVs de USG
 
-### Predicción de Etiquetas Individuales (UC)
+Después de descargar o modificar los audios locales, regenera los CSVs:
 
-1. Entrenar modelos individuales:
+```bash
+python regenerar_csv_usg_local.py
+```
 
-   ```bash
-   python prediccion_etiqueta_uc/entrenamiento/entrenamiento_electrode.py
-   python prediccion_etiqueta_uc/entrenamiento/entrenamiento_plate.py
-   python prediccion_etiqueta_uc/entrenamiento/entrenamiento_polarity.py
-   ```
+Este script:
 
-2. Realizar predicciones:
-   ```bash
-   python prediccion_etiqueta_uc/prediccion/prediccion_electrode.py
-   python prediccion_etiqueta_uc/prediccion/prediccion_plate.py
-   python prediccion_etiqueta_uc/prediccion/prediccion_polarity.py
-   ```
-
-## Notas
-
-- Todos los scripts utilizan rutas absolutas desde el directorio base
-- Los archivos CSV y modelos `.h5` están excluidos del control de versiones
-- Los audios de entrenamiento están organizados por tipo de placa, electrodo y polaridad
+- Escanea `prediccion_etiqueta_usg/{05s,10s,30s}/audio/train/` recursivamente
+- Extrae etiquetas de la estructura de carpetas (`Placa_XXmm/EXXXX/AC_o_DC/`)
+- Genera rutas relativas desde el directorio base del proyecto
+- Crea CSVs actualizados: `rutas_etiquetas_plate.csv`, `electrode.csv`, `polarity.csv`, `conjunto.csv`
+- Muestra estadísticas de distribución por etiqueta
