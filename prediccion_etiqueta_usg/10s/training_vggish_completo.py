@@ -12,14 +12,8 @@ from tensorflow import keras
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 PREDICCION_USG_10S_DIR = BASE_DIR / "prediccion_etiqueta_usg" / "10s"
 
-# Cargar los tres CSV con las etiquetas correspondientes
-plate_data = pd.read_csv(PREDICCION_USG_10S_DIR / "rutas_etiquetas_conjunto.csv")
-electrode_data = pd.read_csv(PREDICCION_USG_10S_DIR / "rutas_etiquetas_electrode.csv")
-polarity_data = pd.read_csv(PREDICCION_USG_10S_DIR / "rutas_etiquetas_polarity.csv")
-
-# Unir los tres DataFrames según las rutas de los audios
-data = pd.merge(plate_data, electrode_data, on="Audio Path", how="inner")
-data = pd.merge(data, polarity_data, on="Audio Path", how="inner")
+# Cargar el CSV con todas las etiquetas
+data = pd.read_csv(PREDICCION_USG_10S_DIR / "rutas_etiquetas_conjunto.csv")
 
 # Convertir rutas relativas a absolutas
 data["Audio Path"] = data["Audio Path"].apply(lambda x: str(BASE_DIR / x))

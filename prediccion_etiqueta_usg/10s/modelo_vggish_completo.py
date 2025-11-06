@@ -22,14 +22,8 @@ your_model = tf.keras.models.load_model(
     PREDICCION_USG_10S_DIR / "my_model_vggish_completo.keras"
 )
 
-# Cargar los datos CSV (Tres CSV para las tres etiquetas)
-plate_data = pd.read_csv(PREDICCION_USG_10S_DIR / "rutas_etiquetas_conjunto.csv")
-electrode_data = pd.read_csv(PREDICCION_USG_10S_DIR / "rutas_etiquetas_electrode.csv")
-polarity_data = pd.read_csv(PREDICCION_USG_10S_DIR / "rutas_etiquetas_polarity.csv")
-
-# Unir los tres DataFrames según las rutas de los audios
-data = pd.merge(plate_data, electrode_data, on="Audio Path", how="inner")
-data = pd.merge(data, polarity_data, on="Audio Path", how="inner")
+# Cargar los datos CSV (conjunto.csv ya contiene todas las columnas)
+data = pd.read_csv(PREDICCION_USG_10S_DIR / "rutas_etiquetas_conjunto.csv")
 
 # Convertir rutas relativas a absolutas
 data["Audio Path"] = data["Audio Path"].apply(lambda x: str(BASE_DIR / x))
