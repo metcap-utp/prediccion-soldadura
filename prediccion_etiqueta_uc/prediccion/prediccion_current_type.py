@@ -1,11 +1,16 @@
 import os
-import pandas as pd
+
 import librosa
 import numpy as np
+import pandas as pd
 import tensorflow as tf
+import tensorflow_hub as hub
 from sklearn.metrics import classification_report
 from sklearn.preprocessing import LabelEncoder
-import tensorflow_hub as hub
+
+# Directorio base del módulo UC
+script_dir = os.path.dirname(os.path.abspath(__file__))
+uc_dir = os.path.join(script_dir, "..")
 
 
 #  Función para obtener archivos 'drums_louder.wav' dentro de subcarpetas
@@ -14,9 +19,7 @@ def get_file_list(directory):
     labels = []  # Almacenar la etiqueta de cada archivo
     for root, dirs, filenames in os.walk(directory):
         for filename in filenames:
-            if (
-                filename == "drums_louder.wav"
-            ):  # Solo buscar 'drums_louder.wav'
+            if filename == "drums_louder.wav":  # Solo buscar 'drums_louder.wav'
                 file_path = os.path.join(root, filename)
                 file_list.append(file_path)
 
@@ -28,27 +31,29 @@ def get_file_list(directory):
     return file_list, labels
 
 
-#  Cargar el modelo VGGish desde el directorio de guardado (asumiendo CWD = prediccion_etiqueta_uc)
-vggish_model = tf.saved_model.load("prediccion/vggish_1")
+#  Cargar el modelo VGGish desde el directorio de guardado
+vggish_path = os.path.join(uc_dir, "prediccion", "vggish_1")
+vggish_model = tf.saved_model.load(vggish_path)
 
 #  Cargar el modelo previamente entrenado (formato nativo Keras)
-model = tf.keras.models.load_model("my_model_completo01.keras")
+model_path = os.path.join(uc_dir, "my_model_completo01.keras")
+model = tf.keras.models.load_model(model_path)
 
 #  Definir las clases
 classes = ["AC", "DC"]
 
 #  Cargar archivos de entrenamiento
-train_files, train_labels = get_file_list("audios01/train")
+train_dir = os.path.join(uc_dir, "audios01", "train")
+train_files, train_labels = get_file_list(train_dir)
 if not train_files:
-    raise ValueError(
-        "No se encontraron archivos en la carpeta de entrenamiento."
-    )
+    raise ValueError("No se encontraron archivos en la carpeta de entrenamiento.")
 
 #  Crear DataFrame de entrenamiento
 train = pd.DataFrame({"filename": train_files, "label": train_labels})
 
 #  Cargar archivos de prueba
-test_files, test_labels = get_file_list("audios01/test")
+test_dir = os.path.join(uc_dir, "audios01", "test")
+test_files, test_labels = get_file_list(test_dir)
 if not test_files:
     raise ValueError("No se encontraron archivos en la carpeta de prueba.")
 
@@ -114,9 +119,7 @@ def predict_genre(filenames):
         )  # Ajustar si el modelo requiere otro formato
         predicted_class = classes[np.argmax(prediction)]
 
-        results.append(
-            predicted_class
-        )  # Devolver la clase con el puntaje más alto
+        results.append(predicted_class)  # Devolver la clase con el puntaje más alto
 
     return results
 

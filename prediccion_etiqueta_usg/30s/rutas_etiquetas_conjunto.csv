@@ -1,4 +1,4 @@
-Audio Path,Plate Thickness,Electrode,Polarity
+Audio Path,Plate Thickness,Electrode,Type of Current
 prediccion_etiqueta_usg/30s/audio/train/Placa_12mm/E6010/DC/240902-132548_Audio/drums_louder_0.wav,Placa_12mm,E6010,DC
 prediccion_etiqueta_usg/30s/audio/train/Placa_12mm/E6010/DC/240902-132548_Audio/drums_louder_30.wav,Placa_12mm,E6010,DC
 prediccion_etiqueta_usg/30s/audio/train/Placa_12mm/E6010/DC/240902-132548_Audio/drums_louder_60.wav,Placa_12mm,E6010,DC

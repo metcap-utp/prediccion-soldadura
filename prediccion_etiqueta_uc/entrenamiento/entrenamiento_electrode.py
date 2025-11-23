@@ -1,16 +1,19 @@
-import pandas as pd
+import os
+
 import numpy as np
-from sklearn.preprocessing import LabelBinarizer
-from sklearn.model_selection import train_test_split
+import pandas as pd
 import tensorflow as tf
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelBinarizer
 from tensorflow import keras
 
 # Cargar los datos
 print("=" * 60)
 print("ENTRENAMIENTO - ELECTRODE")
 print("=" * 60)
-print("\n>> Cargando datos desde rutas_etiquetas_01.csv...")
-file_path = "rutas_etiquetas_01.csv"
+print("\n>> Cargando datos desde rutas_etiquetas_electrode.csv...")
+script_dir = os.path.dirname(os.path.abspath(__file__))
+file_path = os.path.join(script_dir, "..", "rutas_etiquetas_electrode.csv")
 data = pd.read_csv(file_path)
 print(f"   [OK] {len(data)} muestras cargadas exitosamente")
 
@@ -74,9 +77,7 @@ model = keras.Sequential(
         keras.layers.Flatten(),
         keras.layers.Dense(128, activation="relu"),
         keras.layers.Dense(64, activation="relu"),
-        keras.layers.Dense(
-            1, activation="sigmoid"
-        ),  # Para clasificación binaria
+        keras.layers.Dense(1, activation="sigmoid"),  # Para clasificación binaria
     ]
 )
 
@@ -95,9 +96,7 @@ model.compile(
 print("\n>> Iniciando proceso de entrenamiento...")
 print("   Configuración: 100 épocas, batch size=32, validación=20%")
 print("   (Esto puede tomar varios minutos...)\n")
-history = model.fit(
-    X_train, y_train, epochs=100, batch_size=32, validation_split=0.2
-)
+history = model.fit(X_train, y_train, epochs=100, batch_size=32, validation_split=0.2)
 
 # Evaluar el modelo
 print("\n>> Evaluando rendimiento del modelo en conjunto de prueba...")
@@ -109,6 +108,8 @@ print(f"   - Recall:    {results[3] * 100:.2f}%")
 
 # Guardar el modelo
 print("\n>> Guardando modelo entrenado en disco...")
-model.save("my_model_completo01.keras")
+uc_dir = os.path.join(script_dir, "..")
+model_path = os.path.join(uc_dir, "my_model_completo01.keras")
+model.save(model_path)
 print("[OK] Entrenamiento finalizado exitosamente")
 print("    Modelo guardado como: my_model_completo01.keras")

@@ -25,34 +25,34 @@ your_model = tf.keras.models.load_model(
 # Cargar los datos CSV (Tres CSV para las tres etiquetas)
 plate_data = pd.read_csv(PREDICCION_USG_05S_DIR / "rutas_etiquetas_plate.csv")
 electrode_data = pd.read_csv(PREDICCION_USG_05S_DIR / "rutas_etiquetas_electrode.csv")
-polarity_data = pd.read_csv(PREDICCION_USG_05S_DIR / "rutas_etiquetas_polarity.csv")
+current_type_data = pd.read_csv(PREDICCION_USG_05S_DIR / "rutas_etiquetas_current_type.csv")
 
 # Unir los tres DataFrames según las rutas de los audios
 data = pd.merge(plate_data, electrode_data, on="Audio Path", how="inner")
-data = pd.merge(data, polarity_data, on="Audio Path", how="inner")
+data = pd.merge(data, current_type_data, on="Audio Path", how="inner")
 
 # Convertir rutas relativas a absolutas
 data["Audio Path"] = data["Audio Path"].apply(lambda x: str(BASE_DIR / x))
 
-# Obtener las rutas de archivo de audio (columna 'Audio') y etiquetas (columnas 'plate', 'electrode', 'polarity')
+# Obtener las rutas de archivo de audio (columna 'Audio') y etiquetas (columnas 'plate', 'electrode', 'current_type')
 X = data["Audio Path"]
 y_plate = data["Plate Thickness"]
 y_electrode = data["Electrode"]
-y_polarity = data["Polarity"]
+y_current_type = data["Type of Current"]
 
 # Convertir etiquetas de texto a valores numéricos
 plate_encoder = LabelEncoder()
 electrode_encoder = LabelEncoder()
-polarity_encoder = LabelEncoder()
+current_type_encoder = LabelEncoder()
 
 y_plate = plate_encoder.fit_transform(y_plate)
 y_electrode = electrode_encoder.fit_transform(y_electrode)
-y_polarity = polarity_encoder.fit_transform(y_polarity)
+y_current_type = current_type_encoder.fit_transform(y_current_type)
 
 # Almacenar las clases en una variable
 plate_classes = plate_encoder.classes_
 electrode_classes = electrode_encoder.classes_
-polarity_classes = polarity_encoder.classes_
+current_type_classes = current_type_encoder.classes_
 
 
 # Función para predecir usando solo VGGish
@@ -78,9 +78,9 @@ def predict_band_name(audio_path):
     # Obtener las etiquetas predichas
     plate_pred = plate_classes[np.argmax(prediction[0])]
     electrode_pred = electrode_classes[np.argmax(prediction[1])]
-    polarity_pred = polarity_classes[np.argmax(prediction[2])]
+    current_type_pred = current_type_classes[np.argmax(prediction[2])]
 
-    return plate_pred, electrode_pred, polarity_pred
+    return plate_pred, electrode_pred, current_type_pred
 
 
 # Obtener archivos de audio y sus etiquetas reales
@@ -96,8 +96,8 @@ def get_file_list_and_labels(directory):
                 if len(partes) >= 7:  # Asegúrate de que la ruta tenga al menos 7 partes
                     plate = partes[-5]  # .../Plate_3mm/...
                     electrode = partes[-4]  # .../E6010/...
-                    polarity = partes[-3]  # .../DC/...
-                    labels.append((plate, electrode, polarity))
+                    current_type = partes[-3]  # .../DC/...
+                    labels.append((plate, electrode, current_type))
     return audio_files, labels
 
 
@@ -122,7 +122,7 @@ results = []
 correctas = 0
 correctas_plate = 0
 correctas_electrode = 0
-correctas_polarity = 0
+correctas_current_type = 0
 
 print("Predicciones y etiquetas reales:\n")
 
@@ -133,15 +133,15 @@ for archivo in test_files_sampled:
     if len(partes) >= 7:
         etiqueta_real_plate = partes[-5]  # .../Plate_3mm/...
         etiqueta_real_electrode = partes[-4]  # .../E6010/...
-        etiqueta_real_polarity = partes[-3]  # .../DC/...
+        etiqueta_real_current_type = partes[-3]  # .../DC/...
     else:
         continue  # Si la ruta no tiene el formato esperado, omitimos el archivo
 
     test_labels_sampled.append(
-        (etiqueta_real_plate, etiqueta_real_electrode, etiqueta_real_polarity)
+        (etiqueta_real_plate, etiqueta_real_electrode, etiqueta_real_current_type)
     )
 
-    prediccion_plate, prediccion_electrode, prediccion_polarity = predict_band_name(
+    prediccion_plate, prediccion_electrode, prediccion_current_type = predict_band_name(
         archivo
     )
 
@@ -150,10 +150,10 @@ for archivo in test_files_sampled:
             archivo,
             etiqueta_real_plate,
             etiqueta_real_electrode,
-            etiqueta_real_polarity,
+            etiqueta_real_current_type,
             prediccion_plate,
             prediccion_electrode,
-            prediccion_polarity,
+            prediccion_current_type,
         ]
     )
 
@@ -161,29 +161,29 @@ for archivo in test_files_sampled:
         correctas_plate += 1
     if prediccion_electrode == etiqueta_real_electrode:
         correctas_electrode += 1
-    if prediccion_polarity == etiqueta_real_polarity:
-        correctas_polarity += 1
+    if prediccion_current_type == etiqueta_real_current_type:
+        correctas_current_type += 1
 
     if (
         prediccion_plate == etiqueta_real_plate
         and prediccion_electrode == etiqueta_real_electrode
-        and prediccion_polarity == etiqueta_real_polarity
+        and prediccion_current_type == etiqueta_real_current_type
     ):
         correctas += 1
 
     print(
-        f"Archivo: {archivo} | Real: {etiqueta_real_plate}, {etiqueta_real_electrode}, {etiqueta_real_polarity} | Predicción: {prediccion_plate}, {prediccion_electrode}, {prediccion_polarity}"
+        f"Archivo: {archivo} | Real: {etiqueta_real_plate}, {etiqueta_real_electrode}, {etiqueta_real_current_type} | Predicción: {prediccion_plate}, {prediccion_electrode}, {prediccion_current_type}"
     )
 
 # Mostrar resultados de precisión
 accuracy_total = correctas / len(test_files_sampled)
 accuracy_plate = correctas_plate / len(test_files_sampled)
 accuracy_electrode = correctas_electrode / len(test_files_sampled)
-accuracy_polarity = correctas_polarity / len(test_files_sampled)
+accuracy_current_type = correctas_current_type / len(test_files_sampled)
 
 print(
     f"\nAccuracy total sobre muestra de prueba (todas las etiquetas correctas): {accuracy_total * 100:.2f}%"
 )
 print(f"Accuracy Plate: {accuracy_plate * 100:.2f}%")
 print(f"Accuracy Electrode: {accuracy_electrode * 100:.2f}%")
-print(f"Accuracy Polarity: {accuracy_polarity * 100:.2f}%")
+print(f"Accuracy Type of Current: {accuracy_current_type * 100:.2f}%")

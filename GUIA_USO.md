@@ -8,7 +8,7 @@ Esta guía explica el orden de ejecución y la función de cada script en el pro
 
 El proyecto está organizado en tres directorios principales:
 
-- **`prediccion_etiqueta_cc/`** - Clasificación Completa Combinada (Plate + Electrode + Polarity)
+- **`prediccion_etiqueta_cc/`** - Clasificación Completa Combinada (Plate + Electrode + Type of Current)
 - **`prediccion_etiqueta_uc/`** - Clasificación por Etiqueta Única (separadas)
 - **`prediccion_etiqueta_usg/`** - Clasificación por Segmentos de Tiempo (5s, 10s, 30s)
 
@@ -29,15 +29,15 @@ Este módulo clasifica las tres etiquetas simultáneamente usando un único mode
 **Qué hace:**
 
 - Escanea recursivamente el directorio `Audios/Train/`
-- Extrae 168 características por audio:
-  - 128 características VGGish (embeddings pre-entrenados)
-  - 40 MFCCs (coeficientes mel-cepstrales)
+- Extrae 40 características MFCC por audio:
+  - 20 coeficientes MFCC (media)
+  - 20 coeficientes MFCC (desviación estándar)
 - Extrae etiquetas de la estructura de carpetas: `Placa_XXmm/EXXXX/AC_o_DC/`
 - Genera el archivo `Rutas_Etiquetas_Completos.csv`
 
 **Salida:**
 
-- `Rutas_Etiquetas_Completos.csv` con rutas y las 168 características
+- `Rutas_Etiquetas_Completos.csv` con rutas y las 40 características MFCC
 
 ```bash
 python prediccion_etiqueta_cc/etiquetado_completo.py
@@ -55,14 +55,13 @@ python prediccion_etiqueta_cc/etiquetado_completo.py
 - Crea un modelo Conv1D con:
   - 3 capas convolucionales
   - BatchNormalization y Dropout
-  - 3 salidas independientes (Plate, Electrode, Polarity)
+  - 3 salidas independientes (Plate, Electrode, Type of Current)
 - Entrena con early stopping
 - Guarda el modelo entrenado
 
 **Entrada:**
 
-- `Rutas_Etiquetas_Completos.csv`
-- Modelo VGGish en `vggish_1/`
+- `Rutas_Etiquetas_Completos.csv` (con 40 características MFCC)
 
 **Salida:**
 
@@ -81,7 +80,7 @@ python prediccion_etiqueta_cc/entrenamiento_completo.py
 **Qué hace:**
 
 - Carga el modelo entrenado
-- Extrae las mismas 168 características del audio de prueba
+- Extrae las mismas 40 características MFCC del audio de prueba
 - Predice las tres etiquetas simultáneamente
 - Muestra los resultados
 
@@ -92,7 +91,7 @@ python prediccion_etiqueta_cc/entrenamiento_completo.py
 
 **Salida:**
 
-- Predicción de Plate Thickness, Electrode y Polarity
+- Predicción de Plate Thickness, Electrode y Type of Current
 
 ```bash
 python prediccion_etiqueta_cc/prediccion_completo.py
@@ -123,7 +122,7 @@ prediccion_etiqueta_uc/
 
 - `etiquetado_plate.py` - Genera etiquetas de espesor de placa
 - `etiquetado_electrode.py` - Genera etiquetas de electrodo
-- `etiquetado_polarity.py` - Genera etiquetas de polaridad
+- `etiquetado_current_type.py` - Genera etiquetas de type of current
 
 **Qué hacen:**
 
@@ -135,12 +134,12 @@ prediccion_etiqueta_uc/
 
 - `rutas_etiquetas_plate.csv`
 - `rutas_etiquetas_electrode.csv`
-- `rutas_etiquetas_polarity.csv`
+- `rutas_etiquetas_current_type.csv`
 
 ```bash
 python prediccion_etiqueta_uc/etiquetado_plate.py
 python prediccion_etiqueta_uc/etiquetado_electrode.py
-python prediccion_etiqueta_uc/etiquetado_polarity.py
+python prediccion_etiqueta_uc/etiquetado_current_type.py
 ```
 
 ---
@@ -153,7 +152,7 @@ python prediccion_etiqueta_uc/etiquetado_polarity.py
 
 - `entrenamiento_plate.py` - Entrena modelo de clasificación de placas
 - `entrenamiento_electrode.py` - Entrena modelo de clasificación de electrodos
-- `entrenamiento_polarity.py` - Entrena modelo de clasificación de polaridad
+- `entrenamiento_current_type.py` - Entrena modelo de clasificación de type of current
 
 **Qué hacen:**
 
@@ -171,12 +170,12 @@ python prediccion_etiqueta_uc/etiquetado_polarity.py
 
 - `my_model_plate.keras`
 - `my_model_electrode.keras`
-- `my_model_polarity.keras`
+- `my_model_current_type.keras`
 
 ```bash
 python prediccion_etiqueta_uc/entrenamiento/entrenamiento_plate.py
 python prediccion_etiqueta_uc/entrenamiento/entrenamiento_electrode.py
-python prediccion_etiqueta_uc/entrenamiento/entrenamiento_polarity.py
+python prediccion_etiqueta_uc/entrenamiento/entrenamiento_current_type.py
 ```
 
 ---
@@ -189,7 +188,7 @@ python prediccion_etiqueta_uc/entrenamiento/entrenamiento_polarity.py
 
 - `prediccion_plate.py` - Predice espesor de placa
 - `prediccion_electrode.py` - Predice tipo de electrodo
-- `prediccion_polarity.py` - Predice polaridad
+- `prediccion_current_type.py` - Predice type of current
 
 **Qué hacen:**
 
@@ -209,7 +208,7 @@ python prediccion_etiqueta_uc/entrenamiento/entrenamiento_polarity.py
 ```bash
 python prediccion_etiqueta_uc/prediccion/prediccion_plate.py
 python prediccion_etiqueta_uc/prediccion/prediccion_electrode.py
-python prediccion_etiqueta_uc/prediccion/prediccion_polarity.py
+python prediccion_etiqueta_uc/prediccion/prediccion_current_type.py
 ```
 
 ---
@@ -247,7 +246,7 @@ Cada subdirectorio contiene los mismos archivos y sigue el mismo proceso.
 
 - `05s/rutas_etiquetas_plate.csv`
 - `05s/rutas_etiquetas_electrode.csv`
-- `05s/rutas_etiquetas_polarity.csv`
+- `05s/rutas_etiquetas_current_type.csv`
 - `10s/rutas_etiquetas_*.csv` (incluye `conjunto.csv`)
 - `30s/rutas_etiquetas_*.csv`
 
@@ -367,8 +366,11 @@ python prediccion_etiqueta_usg/30s/modelo_vggish_completo.py
 
 ## Notas Importantes
 
-- **VGGish**: Modelo pre-entrenado que extrae embeddings de audio a 16kHz
-- **Características**: CC usa 168 (128 VGGish + 40 MFCC), UC/USG solo VGGish
+- **Características por módulo**:
+  - **CC**: 40 MFCC (20 mean + 20 std)
+  - **UC**: 128 embeddings VGGish
+  - **USG**: Log-mel spectrograms (96×64 frames)
+- **VGGish**: Modelo pre-entrenado que extrae embeddings de audio a 16kHz (usado en UC)
 - **Formato de modelo**: Todos los modelos se guardan en formato `.keras` (nativo de Keras 3.x)
 - **Estructura de carpetas**: Las etiquetas se extraen automáticamente de: `Placa_XXmm/EXXXX/AC_o_DC/`
 
@@ -386,4 +388,4 @@ python regenerar_csv_usg_local.py
 
 ---
 
-**Última actualización:** Noviembre 5, 2025
+**Última actualización:** Noviembre 12, 2025

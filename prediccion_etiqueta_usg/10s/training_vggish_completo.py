@@ -21,11 +21,11 @@ data["Audio Path"] = data["Audio Path"].apply(lambda x: str(BASE_DIR / x))
 # Codificar las etiquetas
 plate_encoder = LabelEncoder()
 electrode_encoder = LabelEncoder()
-polarity_encoder = LabelEncoder()
+current_type_encoder = LabelEncoder()
 
 data["Plate Thickness"] = plate_encoder.fit_transform(data["Plate Thickness"])
 data["Electrode"] = electrode_encoder.fit_transform(data["Electrode"])
-data["Polarity"] = polarity_encoder.fit_transform(data["Polarity"])
+data["Type of Current"] = current_type_encoder.fit_transform(data["Type of Current"])
 
 
 # Función para convertir audio a espectrograma log-mel compatible con VGGish
@@ -54,10 +54,10 @@ data["Features"] = data["Audio Path"].apply(load_vggish_logmel)
 # Convertir a arrays
 X = np.stack(data["Features"])
 
-# Las etiquetas (Placa, Electrodo, Polaridad) se usan como salida
+# Las etiquetas (Placa, Electrodo, Type of Current) se usan como salida
 y_plate = data["Plate Thickness"].values
 y_electrode = data["Electrode"].values
-y_polarity = data["Polarity"].values
+y_current_type = data["Type of Current"].values
 
 # Separar en entrenamiento y prueba
 (
@@ -67,10 +67,10 @@ y_polarity = data["Polarity"].values
     y_plate_test,
     y_electrode_train,
     y_electrode_test,
-    y_polarity_train,
-    y_polarity_test,
+    y_current_type_train,
+    y_current_type_test,
 ) = train_test_split(
-    X, y_plate, y_electrode, y_polarity, test_size=0.2, random_state=42
+    X, y_plate, y_electrode, y_current_type, test_size=0.2, random_state=42
 )
 
 # Crear modelo con entradas tipo VGGish: (96, 64)
@@ -90,13 +90,13 @@ output_plate = keras.layers.Dense(
 output_electrode = keras.layers.Dense(
     len(electrode_encoder.classes_), activation="softmax", name="electrode_output"
 )(x)
-output_polarity = keras.layers.Dense(
-    len(polarity_encoder.classes_), activation="softmax", name="polarity_output"
+output_current_type = keras.layers.Dense(
+    len(current_type_encoder.classes_), activation="softmax", name="current_type_output"
 )(x)
 
 # Modelo
 model = keras.Model(
-    inputs=input_layer, outputs=[output_plate, output_electrode, output_polarity]
+    inputs=input_layer, outputs=[output_plate, output_electrode, output_current_type]
 )
 
 # Compilar modelo
@@ -105,12 +105,12 @@ model.compile(
     loss={
         "plate_output": "sparse_categorical_crossentropy",
         "electrode_output": "sparse_categorical_crossentropy",
-        "polarity_output": "sparse_categorical_crossentropy",
+        "current_type_output": "sparse_categorical_crossentropy",
     },
     metrics={
         "plate_output": "accuracy",
         "electrode_output": "accuracy",
-        "polarity_output": "accuracy",
+        "current_type_output": "accuracy",
     },
 )
 
@@ -120,7 +120,7 @@ model.fit(
     {
         "plate_output": y_plate_train,
         "electrode_output": y_electrode_train,
-        "polarity_output": y_polarity_train,
+        "current_type_output": y_current_type_train,
     },
     epochs=100,
     batch_size=32,
@@ -129,7 +129,7 @@ model.fit(
         {
             "plate_output": y_plate_test,
             "electrode_output": y_electrode_test,
-            "polarity_output": y_polarity_test,
+            "current_type_output": y_current_type_test,
         },
     ),
 )
@@ -140,7 +140,7 @@ evaluation_results = model.evaluate(
     {
         "plate_output": y_plate_test,
         "electrode_output": y_electrode_test,
-        "polarity_output": y_polarity_test,
+        "current_type_output": y_current_type_test,
     },
 )
 
@@ -148,15 +148,15 @@ evaluation_results = model.evaluate(
     test_loss,
     test_loss_plate,
     test_loss_electrode,
-    test_loss_polarity,
+    test_loss_current_type,
     test_accuracy_plate,
     test_accuracy_electrode,
-    test_accuracy_polarity,
+    test_accuracy_current_type,
 ) = evaluation_results
 
 print(f"Test accuracy Plate: {test_accuracy_plate * 100:.2f}%")
 print(f"Test accuracy Electrode: {test_accuracy_electrode * 100:.2f}%")
-print(f"Test accuracy Polarity: {test_accuracy_polarity * 100:.2f}%")
+print(f"Test accuracy Type of Current: {test_accuracy_current_type * 100:.2f}%")
 
 # Guardar modelo en formato nativo Keras
 model.save(PREDICCION_USG_10S_DIR / "my_model_vggish_completo.keras")

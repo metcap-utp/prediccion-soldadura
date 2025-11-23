@@ -1,14 +1,14 @@
 # Clasificación de Audio de Soldadura con Deep Learning
 
-Sistema de clasificación multi-etiqueta para predecir características de soldadura (espesor de placa, tipo de electrodo y polaridad) a partir de señales de audio usando modelos de Deep Learning con VGGish.
+Sistema de clasificación multi-etiqueta para predecir características de soldadura (espesor de placa, tipo de electrodo y type of current) a partir de señales de audio usando modelos de Deep Learning con VGGish.
 
 ## Descripción
 
 Este proyecto implementa tres enfoques diferentes para la clasificación de audio de soldadura:
 
-- **CC (Clasificación Completa)**: Modelo multi-salida que predice las 3 etiquetas simultáneamente
-- **UC (Clasificación Unitaria)**: Modelos independientes para cada etiqueta
-- **USG (Clasificación por Segmentos)**: Modelos entrenados con diferentes duraciones de audio (5s, 10s, 30s)
+- **CC (Clasificación Completa)**: Modelo multi-salida que predice las 3 etiquetas simultáneamente usando MFCC
+- **UC (Clasificación Unitaria)**: Modelos independientes para cada etiqueta usando embeddings VGGish
+- **USG (Clasificación por Segmentos)**: Modelos entrenados con diferentes duraciones de audio (5s, 10s, 30s) usando log-mel spectrograms
 
 ## Inicio Rápido
 
@@ -76,10 +76,9 @@ python prediccion_etiqueta_cc/prediccion_completo.py
 ```
 alejandra-2025/
 ├── prediccion_etiqueta_cc/          # Clasificación Completa Combinada
-│   ├── etiquetado_completo.py       # Extracción de características (VGGish + MFCC)
+│   ├── etiquetado_completo.py       # Extracción de características (MFCC)
 │   ├── entrenamiento_completo.py    # Entrenamiento del modelo multi-salida
 │   ├── prediccion_completo.py       # Predicción de nuevos audios
-│   ├── vggish_1/                    # Modelo VGGish pre-entrenado
 │   └── Audios/                      # Dataset de audio
 │       ├── Train/                   # Datos de entrenamiento
 │       └── Test/                    # Datos de prueba
@@ -88,11 +87,11 @@ alejandra-2025/
 │   ├── entrenamiento/               # Scripts de entrenamiento por etiqueta
 │   │   ├── entrenamiento_plate.py
 │   │   ├── entrenamiento_electrode.py
-│   │   └── entrenamiento_polarity.py
+│   │   └── entrenamiento_current_type.py
 │   ├── prediccion/                  # Scripts de predicción por etiqueta
 │   │   ├── prediccion_plate.py
 │   │   ├── prediccion_electrode.py
-│   │   └── prediccion_polarity.py
+│   │   └── prediccion_current_type.py
 │   └── audios01/                    # Dataset de audio
 │       ├── train/
 │       └── test/
@@ -120,14 +119,14 @@ alejandra-2025/
 
 ### Extracción de Características
 
-- **VGGish**: 128 embeddings pre-entrenados de audio a 16kHz
-- **MFCC**: 40 coeficientes mel-cepstrales (solo en CC)
-- **Total**: 168 características por audio (CC) o 128 (UC/USG)
+- **CC (Clasificación Completa)**: 40 coeficientes MFCC (20 mean + 20 std)
+- **UC (Clasificación Unitaria)**: 128 embeddings VGGish pre-entrenados
+- **USG (Por Segmentos)**: Log-mel spectrograms (96×64) para VGGish
 
 ### Arquitectura del Modelo
 
 - **Red Neuronal**: Conv1D con capas de BatchNormalization y Dropout
-- **Salidas**: 3 clasificadores independientes (Plate, Electrode, Polarity)
+- **Salidas**: 3 clasificadores independientes (Plate, Electrode, Type of Current)
 - **Optimizador**: Adam
 - **Función de pérdida**: Sparse Categorical Crossentropy
 
@@ -135,7 +134,7 @@ alejandra-2025/
 
 - **Plate Thickness**: Placa_3mm, Placa_6mm, Placa_12mm
 - **Electrode**: E6010, E6011, E6013, E7018
-- **Polarity**: AC, DC
+- **Type of Current**: AC, DC
 
 ## Utilidades
 
@@ -152,5 +151,5 @@ Este script:
 - Escanea `prediccion_etiqueta_usg/{05s,10s,30s}/audio/train/` recursivamente
 - Extrae etiquetas de la estructura de carpetas (`Placa_XXmm/EXXXX/AC_o_DC/`)
 - Genera rutas relativas desde el directorio base del proyecto
-- Crea CSVs actualizados: `rutas_etiquetas_plate.csv`, `electrode.csv`, `polarity.csv`, `conjunto.csv`
+- Crea CSVs actualizados: `rutas_etiquetas_plate.csv`, `electrode.csv`, `current_type.csv`, `conjunto.csv`
 - Muestra estadísticas de distribución por etiqueta

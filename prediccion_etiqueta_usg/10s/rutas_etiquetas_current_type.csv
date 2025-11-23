@@ -1,4 +1,4 @@
-Audio Path,Polarity
+Audio Path,Type of Current
 prediccion_etiqueta_usg/10s/audio/train/Placa_12mm/E6010/DC/240902-132548_Audio/drums_louder_0.wav,DC
 prediccion_etiqueta_usg/10s/audio/train/Placa_12mm/E6010/DC/240902-132548_Audio/drums_louder_10.wav,DC
 prediccion_etiqueta_usg/10s/audio/train/Placa_12mm/E6010/DC/240902-132548_Audio/drums_louder_20.wav,DC

@@ -27,7 +27,7 @@ def generar_csv_para_duracion(duracion: str):
     # Listas para almacenar datos
     rutas_plate = []
     rutas_electrode = []
-    rutas_polarity = []
+    rutas_current_type = []
     rutas_conjunto = []
 
     # Buscar todos los archivos .wav recursivamente
@@ -47,14 +47,14 @@ def generar_csv_para_duracion(duracion: str):
             idx_train = partes.index("train")
             placa = partes[idx_train + 1]  # Placa_XXmm
             electrodo = partes[idx_train + 2]  # EXXXX
-            polaridad = partes[idx_train + 3]  # AC o DC
+            type_of_current = partes[idx_train + 3]  # AC o DC
 
             # Validar que las etiquetas tengan el formato esperado
             if not placa.startswith("Placa_"):
                 continue
             if not electrodo.startswith("E"):
                 continue
-            if polaridad not in ["AC", "DC"]:
+            if type_of_current not in ["AC", "DC"]:
                 continue
 
             # Agregar a las listas correspondientes
@@ -66,8 +66,8 @@ def generar_csv_para_duracion(duracion: str):
                 {"Audio Path": str(ruta_relativa), "Electrode": electrodo}
             )
 
-            rutas_polarity.append(
-                {"Audio Path": str(ruta_relativa), "Polarity": polaridad}
+            rutas_current_type.append(
+                {"Audio Path": str(ruta_relativa), "Type of Current": type_of_current}
             )
 
             rutas_conjunto.append(
@@ -75,7 +75,7 @@ def generar_csv_para_duracion(duracion: str):
                     "Audio Path": str(ruta_relativa),
                     "Plate Thickness": placa,
                     "Electrode": electrodo,
-                    "Polarity": polaridad,
+                    "Type of Current": type_of_current,
                 }
             )
 
@@ -86,7 +86,7 @@ def generar_csv_para_duracion(duracion: str):
     # Crear DataFrames
     df_plate = pd.DataFrame(rutas_plate)
     df_electrode = pd.DataFrame(rutas_electrode)
-    df_polarity = pd.DataFrame(rutas_polarity)
+    df_current_type = pd.DataFrame(rutas_current_type)
     df_conjunto = pd.DataFrame(rutas_conjunto)
 
     # Directorio de salida
@@ -95,24 +95,28 @@ def generar_csv_para_duracion(duracion: str):
     # Guardar CSVs
     csv_plate = output_dir / "rutas_etiquetas_plate.csv"
     csv_electrode = output_dir / "rutas_etiquetas_electrode.csv"
-    csv_polarity = output_dir / "rutas_etiquetas_polarity.csv"
+    csv_current_type = output_dir / "rutas_etiquetas_current_type.csv"
     csv_conjunto = output_dir / "rutas_etiquetas_conjunto.csv"
 
     df_plate.to_csv(csv_plate, index=False)
     df_electrode.to_csv(csv_electrode, index=False)
-    df_polarity.to_csv(csv_polarity, index=False)
+    df_current_type.to_csv(csv_current_type, index=False)
     df_conjunto.to_csv(csv_conjunto, index=False)
 
     print(f"CSV de plate generado: {csv_plate} ({len(df_plate)} entradas)")
     print(f"CSV de electrode generado: {csv_electrode} ({len(df_electrode)} entradas)")
-    print(f"CSV de polarity generado: {csv_polarity} ({len(df_polarity)} entradas)")
+    print(
+        f"CSV de current_type generado: {csv_current_type} ({len(df_current_type)} entradas)"
+    )
     print(f"CSV de conjunto generado: {csv_conjunto} ({len(df_conjunto)} entradas)")
 
     # Mostrar estadísticas
     print(f"\nEstadisticas para {duracion}:")
     print(f"   Placas: {df_plate['Plate Thickness'].value_counts().to_dict()}")
     print(f"   Electrodos: {df_electrode['Electrode'].value_counts().to_dict()}")
-    print(f"   Polaridades: {df_polarity['Polarity'].value_counts().to_dict()}")
+    print(
+        f"   Types of Current: {df_current_type['Type of Current'].value_counts().to_dict()}"
+    )
 
 
 def main():

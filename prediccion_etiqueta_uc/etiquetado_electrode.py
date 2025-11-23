@@ -1,4 +1,5 @@
 import os
+
 import librosa
 import numpy as np
 import pandas as pd
@@ -58,9 +59,7 @@ def obtener_rutas_y_etiquetas_con_caracteristicas(directorio_base):
                 file == "drums_louder.wav"
             ):  # Filtra solo los archivos 'drums_louder.wav'
                 audio_path = os.path.join(root, file)
-                partes_ruta = os.path.relpath(
-                    audio_path, directorio_base
-                ).split(os.sep)
+                partes_ruta = os.path.relpath(audio_path, directorio_base).split(os.sep)
 
                 try:
                     # Extraer la etiqueta de la carpeta principal
@@ -106,7 +105,8 @@ def obtener_rutas_y_etiquetas_con_caracteristicas(directorio_base):
 
 
 # Ruta del directorio base
-directorio_base = "audios01/train"
+script_dir = os.path.dirname(os.path.abspath(__file__))
+directorio_base = os.path.join(script_dir, "audios01", "train")
 
 # Obtener el DataFrame con las rutas, etiquetas y características
 df_rutas_con_caracteristicas = obtener_rutas_y_etiquetas_con_caracteristicas(
@@ -115,8 +115,9 @@ df_rutas_con_caracteristicas = obtener_rutas_y_etiquetas_con_caracteristicas(
 
 # Guardar el DataFrame en CSV
 print("\n>> Guardando resultados en archivo CSV...")
-df_rutas_con_caracteristicas.to_csv("rutas_etiquetas_01.csv", index=False)
+csv_path = os.path.join(script_dir, "rutas_etiquetas_electrode.csv")
+df_rutas_con_caracteristicas.to_csv(csv_path, index=False)
 
 print("[OK] Proceso completado exitosamente")
 print(f"    - Archivos procesados: {len(df_rutas_con_caracteristicas)}")
-print("    - Archivo generado: rutas_etiquetas_01.csv")
+print("    - Archivo generado: rutas_etiquetas_electrode.csv")

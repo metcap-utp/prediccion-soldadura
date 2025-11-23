@@ -1,11 +1,16 @@
 import os
-import pandas as pd
+
 import librosa
 import numpy as np
+import pandas as pd
 import tensorflow as tf
+import tensorflow_hub as hub
 from sklearn.metrics import classification_report
 from sklearn.preprocessing import LabelEncoder
-import tensorflow_hub as hub
+
+# Directorio base del módulo UC
+script_dir = os.path.dirname(os.path.abspath(__file__))
+uc_dir = os.path.join(script_dir, "..")
 
 
 # Evitar OOM en GPU: permitir memory growth en las GPUs disponibles
@@ -61,9 +66,7 @@ def get_file_list(directory):
             f"Warning: ninguna etiqueta detectada en '{directory}' coincide con la lista `classes`."
         )
         print(f"Etiquetas detectadas: {sorted(detected_labels)}")
-        print(
-            "Usando las etiquetas detectadas como etiquetas finales (fallback)."
-        )
+        print("Usando las etiquetas detectadas como etiquetas finales (fallback).")
         # No filtramos: mantenemos file_list/labels tal cual
         return file_list, labels
 
@@ -84,14 +87,16 @@ print("=" * 60)
 print("PREDICCION - ELECTRODE")
 print("=" * 60)
 
-# Cargar el modelo VGGish desde el directorio de guardado (asumiendo CWD = prediccion_etiqueta_uc)
+# Cargar el modelo VGGish desde el directorio de guardado
 print("\n>> Cargando extractor de características VGGish...")
-vggish_model = tf.saved_model.load("prediccion/vggish_1")
+vggish_path = os.path.join(uc_dir, "prediccion", "vggish_1")
+vggish_model = tf.saved_model.load(vggish_path)
 print("   [OK] VGGish cargado")
 
 # Cargar el modelo previamente entrenado (formato nativo Keras)
 print(">> Cargando clasificador entrenado: my_model_completo01.keras")
-model = tf.keras.models.load_model("my_model_completo01.keras")
+model_path = os.path.join(uc_dir, "my_model_completo01.keras")
+model = tf.keras.models.load_model(model_path)
 # Determinar la dimensión de salida del modelo
 try:
     output_dim = model.output_shape[-1]
@@ -111,20 +116,21 @@ classes = [
 
 # Cargar rutas y etiquetas desde CSV (usar el CSV maestro en la raíz del proyecto)
 # El CSV debe contener una columna con la ruta: 'Audio Path' y una columna de etiqueta.
-print("\n>> Leyendo archivo de etiquetas: rutas_etiquetas_01.csv")
-df_all = pd.read_csv("rutas_etiquetas_01.csv")
+print("\n>> Leyendo archivo de etiquetas: rutas_etiquetas_electrode.csv")
+csv_path = os.path.join(uc_dir, "rutas_etiquetas_electrode.csv")
+df_all = pd.read_csv(csv_path)
 print(f"   [OK] {len(df_all)} archivos de audio encontrados en el CSV")
 
 # Determinar la columna de etiqueta disponible (prioridad)
 if "Electrode" in df_all.columns:
     label_col = "Electrode"
-elif "Polarity" in df_all.columns:
-    label_col = "Polarity"
+elif "Type of Current" in df_all.columns:
+    label_col = "Type of Current"
 elif "label" in df_all.columns:
     label_col = "label"
 else:
     raise ValueError(
-        "No se encontró columna de etiquetas en rutas_etiquetas_01.csv (se buscó Electrode/Polarity/label)."
+        "No se encontró columna de etiquetas en rutas_etiquetas_electrode.csv (se buscó Electrode/Type of Current/label)."
     )
 
 # Filtrar filas para train/test por la ruta (las rutas en el CSV contienen 'audios01/train' o 'audios01/test')
@@ -136,13 +142,14 @@ df_test = df_all[mask_test].copy()
 
 if df_train.empty:
     raise ValueError(
-        "No se encontraron filas de entrenamiento en rutas_etiquetas_01.csv para 'audios01/train'."
+        "No se encontraron filas de entrenamiento en rutas_etiquetas_electrode.csv para 'audios01/train'."
     )
 if df_test.empty:
     # Intento 1: mapear archivos existentes en disco dentro de audios01/test a etiquetas del CSV
     print("\n[AVISO] No se encontraron datos de prueba en el CSV")
     print(">> Buscando archivos de audio en el directorio audios01/test/...")
-    test_files_fs, _ = get_file_list("audios01/test")
+    test_dir = os.path.join(uc_dir, "audios01", "test")
+    test_files_fs, _ = get_file_list(test_dir)
     mapped_files = []
     mapped_labels = []
 
@@ -159,9 +166,7 @@ if df_test.empty:
             mapped_labels.append(matches.iloc[0][label_col])
         else:
             base = os.path.basename(f)
-            matches2 = df_all[
-                df_all["Audio Path"].astype(str).str.endswith(base)
-            ]
+            matches2 = df_all[df_all["Audio Path"].astype(str).str.endswith(base)]
             if not matches2.empty:
                 mapped_files.append(f)
                 mapped_labels.append(matches2.iloc[0][label_col])
@@ -174,9 +179,7 @@ if df_test.empty:
         df_test_fallback_used = True
     else:
         # Intento 2: crear un split desde las filas de Train en CSV
-        print(
-            ">> No se pudieron mapear archivos. Dividiendo datos de entrenamiento..."
-        )
+        print(">> No se pudieron mapear archivos. Dividiendo datos de entrenamiento...")
         print("   Creando split aleatorio: 80% entrenamiento, 20% prueba")
         df_train = df_train.sample(frac=1.0, random_state=42)
         small_test = df_train.sample(frac=0.2, random_state=42)
@@ -194,9 +197,7 @@ if df_test.empty:
             }
         )
         df_test_fallback_used = True
-        print(
-            f"   [OK] Conjuntos creados - Train: {len(train)} | Test: {len(test)}"
-        )
+        print(f"   [OK] Conjuntos creados - Train: {len(train)} | Test: {len(test)}")
 else:
     df_test_fallback_used = False
 
@@ -298,9 +299,7 @@ def predict_genre(filenames):
             # Multiclase: aplicar argmax
             predicted_class = classes[int(np.argmax(prediction))]
 
-        results.append(
-            predicted_class
-        )  # Devolver la clase con el puntaje más alto
+        results.append(predicted_class)  # Devolver la clase con el puntaje más alto
 
     return results
 

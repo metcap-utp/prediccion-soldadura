@@ -16,19 +16,19 @@ data = pd.read_csv(file_path)
 
 # Preprocesar las etiquetas
 label_binarizers = {}
-for column in ["Plate Thickness", "Electrode", "Polarity"]:
+for column in ["Plate Thickness", "Electrode", "Type of Current"]:
     lb = LabelBinarizer()
     data[column] = lb.fit_transform(data[column])
     label_binarizers[column] = lb
 
 # Convertir las etiquetas a formato numérico adecuado
-y = data[["Plate Thickness", "Electrode", "Polarity"]].to_numpy(
+y = data[["Plate Thickness", "Electrode", "Type of Current"]].to_numpy(
     dtype=np.float32
 )
 
 # Extraer las características, excluyendo las etiquetas y la ruta de audio
 X = data.drop(
-    columns=["Audio Path", "Plate Thickness", "Electrode", "Polarity"]
+    columns=["Audio Path", "Plate Thickness", "Electrode", "Type of Current"]
 ).to_numpy(dtype=np.float32)
 
 # Dividir los datos en conjuntos de entrenamiento y prueba
